@@ -28,7 +28,7 @@ func Initilize() {
 	packetManager.RegisterPacketType("AUTH_RESPONSE", func() api.PacketInterface { return &packetimpl.AuthResponsePacket{} })
 }
 
-func start(host string, port int64) {
+func Start(host string, port int64) {
 	conn, err := net.Dial("tcp", host+":"+strconv.FormatInt(port, 10))
 	if err != nil {
 		fmt.Println("Error while connecting:", err.Error())
@@ -53,11 +53,11 @@ func start(host string, port int64) {
 	}()
 	for i := 1; i <= NUM_ITERATIONS; i++ {
 		disconnectPacket := packetimpl.NewDisconnectPacket(1000 + i)
-		sendPacket(conn, disconnectPacket)
+		SendPacket(conn, disconnectPacket)
 		time.Sleep(1 * time.Second)
 
 		authPacket := packetimpl.NewAuthPacket(uuid.New().String())
-		sendPacket(conn, authPacket)
+		SendPacket(conn, authPacket)
 		time.Sleep(1 * time.Second)
 	}
 
@@ -66,7 +66,7 @@ func start(host string, port int64) {
 	fmt.Println("Client wird beendet.")
 }
 
-func sendPacket(conn net.Conn, p api.PacketInterface) {
+func SendPacket(conn net.Conn, p api.PacketInterface) {
 	jsonString, err := packetManager.ToJson(p)
 	if err != nil {
 		fmt.Printf("Error while serializing packet %s: %s\n", p.GetType(), err.Error())
