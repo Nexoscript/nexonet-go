@@ -2,7 +2,8 @@ package packetimpl
 
 import (
 	"fmt"
-	"nexonet/api"
+
+	"github.com/Nexoscript/nexonet-go/api"
 )
 
 type DisconnectPacket struct {

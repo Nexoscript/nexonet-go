@@ -3,7 +3,8 @@ package packet
 import (
 	"encoding/json"
 	"fmt"
-	"nexonet/api"
+
+	"github.com/Nexoscript/nexonet-go/api"
 )
 
 type PacketCreator func() api.PacketInterface

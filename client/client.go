@@ -4,12 +4,13 @@ import (
 	"bufio"
 	"fmt"
 	"net"
-	"nexonet/api"
-	"nexonet/packet"
-	packetimpl "nexonet/packet/packet_impl"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/Nexoscript/nexonet-go/api"
+	"github.com/Nexoscript/nexonet-go/packet"
+	packetimpl "github.com/Nexoscript/nexonet-go/packet/packet_impl"
 
 	"github.com/google/uuid"
 )

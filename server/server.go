@@ -3,11 +3,13 @@ package server
 import (
 	"fmt"
 	"net"
-	"nexonet/api"
-	"nexonet/packet"
-	packetimpl "nexonet/packet/packet_impl"
 	"os"
 	"strconv"
+
+	"github.com/Nexoscript/nexonet-go/api"
+	"github.com/Nexoscript/nexonet-go/packet"
+
+	packetimpl "github.com/Nexoscript/nexonet-go/packet/packet_impl"
 )
 
 var packetManager *packet.PacketManager
