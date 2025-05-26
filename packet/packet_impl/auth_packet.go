@@ -19,5 +19,5 @@ func NewAuthPacket(id string) *AuthPacket {
 }
 
 func (ap AuthPacket) String() string {
-	return fmt.Sprintf("AuthPacket{id=%s}", ap.Id)
+	return fmt.Sprintf("AuthPacket{type=%s, id=%s}", ap.Type, ap.Id)
 }

@@ -19,5 +19,5 @@ func NewDisconnectPacket(code int) *DisconnectPacket {
 }
 
 func (dp DisconnectPacket) String() string {
-	return fmt.Sprintf("DisconnectPacket{code=%d}", dp.Code)
+	return fmt.Sprintf("DisconnectPacket{type=%s, code=%d}", dp.Type, dp.Code)
 }

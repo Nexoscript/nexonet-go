@@ -21,5 +21,5 @@ func NewAuthResponsePacket(id string, isSuccess bool) *AuthResponsePacket {
 }
 
 func (ap AuthResponsePacket) String() string {
-	return fmt.Sprintf("AuthResponsePacket{isSuccess=%t, id=%s}", ap.IsSuccess, ap.Id)
+	return fmt.Sprintf("AuthResponsePacket{type=%s, isSuccess=%t, id=%s}", ap.Type, ap.IsSuccess, ap.Id)
 }
