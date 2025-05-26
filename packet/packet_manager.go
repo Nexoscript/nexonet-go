@@ -21,6 +21,7 @@ func (pm *PacketManager) RegisterPacketType(packetType string, creator PacketCre
 	if _, exists := pm.packetRegistry[packetType]; exists {
 		fmt.Printf("Warn: Packet type '%s' is already registered and will be overwritten.\n", packetType)
 	}
+	pm.packetRegistry[packetType] = creator
 }
 
 func (pm *PacketManager) ToJson(packet api.PacketInterface) (string, error) {
