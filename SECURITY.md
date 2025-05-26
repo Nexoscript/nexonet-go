@@ -21,9 +21,9 @@ We aim to respond within **7 business days** and resolve verified issues as quic
 
 ## 🔒 Supported Versions
 
-| Version    | Supported |
-| ---------- | --------- |
-| `0.1.x`    | ⚙️ WIP    |
+| Version | Supported |
+| ------- | --------- |
+| `0.1.x` | ⚙️ WIP    |
 
 ## 🙏 Responsible Disclosure
 
