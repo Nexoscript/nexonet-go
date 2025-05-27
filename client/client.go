@@ -6,10 +6,8 @@ import (
 	"io"
 	"net"
 	"os"
-	"os/signal"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/Nexoscript/nexonet-go/api"
@@ -45,68 +43,79 @@ func Connect(host string, port int64) {
 		os.Exit(1)
 	}
 	fmt.Println("Connected to server ", host+":"+strconv.FormatInt(port, 10))
+	isRunning = true
 	serverReader := bufio.NewReader(conn)
 	go run(serverReader)
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
-	<-sigChan
-
-	fmt.Println("Client disconnecting...")
-	conn.Close()
 }
 
 func run(reader *bufio.Reader) {
-	for {
-		if isRunning {
-			if !isAuth {
-				authPacket := packetimpl.NewAuthPacket(uuid.New().String())
-				SendPacket(conn, authPacket)
+	for isRunning {
+		conn.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
+		serverResponse, err := reader.ReadString('\n')
+		if err != nil {
+			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+				continue
 			}
-			serverResponse, err := reader.ReadString('\n')
+			if err == io.EOF {
+				fmt.Println("Server connection closed.")
+			} else {
+				fmt.Printf("Error while reading server response: %v\n", err)
+			}
+			isRunning = false
+			return
+		}
+		conn.SetReadDeadline(time.Time{})
+		serverResponse = strings.TrimSpace(serverResponse)
+		if serverResponse != "" {
+			if !strings.HasPrefix(serverResponse, "{") {
+				serverResponse = "{" + serverResponse
+			}
+			packet, err := packetManager.FromJson(serverResponse)
 			if err != nil {
-				if err == io.EOF {
-					// this.logger.log(LoggingType.INFO, "Serververbindung geschlossen.")
-					return
-				}
-				//this.logger.log(LoggingType.ERROR, fmt.Sprintf("Fehler beim Lesen vom Server: %v", err))
-				return
+				fmt.Printf("Error while deserializing packet: %v\n", err)
+				continue
 			}
-			serverResponse = strings.TrimSpace(serverResponse)
-			if serverResponse != "" {
-				if !strings.HasPrefix(serverResponse, "{") {
-					serverResponse = "{" + serverResponse
-				}
-				packet, err := packetManager.FromJson(serverResponse)
-				if err != nil {
-					continue
-				}
-				if isAuth {
-					//clientReceivedEvent.OnClientReceived(this, packet)
-				}
-				if authResponsePacket, ok := packet.(*packetimpl.AuthResponsePacket); ok {
-					if authResponsePacket.IsSuccess {
-						id = authResponsePacket.Id
-						isAuth = true
-						//clientConnectEvent.onClientConnect(this)
-						continue
-					}
+			switch p := packet.(type) {
+			case *packetimpl.AuthResponsePacket:
+				if p.IsSuccess {
+					id = p.Id
+					isAuth = true
+					fmt.Printf("Authentication successfull. Client ID: %s\n", id)
+					// clientConnectEvent.onClientConnect(this) - falls vorhanden
+				} else {
+					fmt.Println("Authentication failed, send new Auth-Packet.")
 					authPacket := packetimpl.NewAuthPacket(uuid.New().String())
 					SendPacket(conn, authPacket)
 				}
+			case *packetimpl.DisconnectPacket:
+				fmt.Printf("Server has send DISCONNECT-Packet with Code %d. Closing connection.\n", p.Code)
+				isRunning = false
+				conn.Close()
+			default:
+				fmt.Printf("Received packet of type '%s': %s\n", p.GetType(), serverResponse)
 			}
-			time.Sleep(1 * time.Millisecond)
-			continue
 		}
-		break
+	}
+	fmt.Println("Run-Goroutine exited.")
+}
+
+func Disconnect() {
+	if conn != nil {
+		disconnectPacket := packetimpl.NewDisconnectPacket(0)
+		SendPacket(conn, disconnectPacket)
+		time.Sleep(100 * time.Millisecond)
+		conn.Close()
+		isRunning = false
+		isAuth = false
+		fmt.Println("Client connection closed.")
 	}
 }
 
-func Disconncet() {
-	conn.Close()
-}
-
 func SendPacket(conn net.Conn, p api.PacketInterface) {
+	if conn == nil {
+		fmt.Printf("Error: Can't send packet '%s', connection is nil.\n", p.GetType())
+		return
+	}
 	jsonString, err := packetManager.ToJson(p)
 	if err != nil {
 		fmt.Printf("Error while serializing packet %s: %s\n", p.GetType(), err.Error())
