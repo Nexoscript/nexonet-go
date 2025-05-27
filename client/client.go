@@ -67,7 +67,7 @@ func run(reader *bufio.Reader) {
 			} else {
 				fmt.Printf("Error while reading server response: %v\n", err)
 			}
-			isRunning = false
+			Disconnect()
 			return
 		}
 		conn.SetReadDeadline(time.Time{})

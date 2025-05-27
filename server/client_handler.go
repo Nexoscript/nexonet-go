@@ -28,7 +28,7 @@ func HandleClientRequest(conn net.Conn) {
 			continue
 		}
 		fmt.Printf("Received [%s] from %s: %s\n", packet.GetType(), conn.RemoteAddr().String(), packet.String())
-		acceptPacket := packetimpl.NewAcceptPacket(fmt.Sprintf("Received [%s] from %s: %s\n", packet.GetType(), conn.RemoteAddr().String(), packet.String()))
+		acceptPacket := packetimpl.NewAcceptPacket(fmt.Sprintf("Received [%s] from %s: %s", packet.GetType(), conn.RemoteAddr().String(), packet.String()))
 		jsonString, err = packetManager.ToJson(acceptPacket)
 		if err != nil {
 			fmt.Printf("Error while serializing packet %s: %s\n", packet.GetType(), err.Error())
