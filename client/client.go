@@ -95,8 +95,7 @@ func run(reader *bufio.Reader) {
 				}
 			case *packetimpl.DisconnectPacket:
 				fmt.Printf("Server has send DISCONNECT-Packet with Code %d. Closing connection.\n", p.Code)
-				isRunning = false
-				conn.Close()
+				Disconnect()
 			default:
 				fmt.Printf("Received packet of type '%s': %s\n", p.GetType(), serverResponse)
 			}
@@ -106,6 +105,9 @@ func run(reader *bufio.Reader) {
 }
 
 func Disconnect() {
+	if !isRunning {
+		return
+	}
 	if conn != nil {
 		conn.Close()
 	}
