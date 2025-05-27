@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 
 	"github.com/Nexoscript/nexonet-go/api"
 	"github.com/Nexoscript/nexonet-go/packet"
@@ -30,8 +32,14 @@ func Start(host string, port int64) {
 	if err != nil {
 		fmt.Println("Error while listening:", err.Error())
 	}
-	defer listen.Close()
 	go run()
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	<-sigChan
+
+	fmt.Println("Server closing...")
+	listen.Close()
 }
 
 func run() {
