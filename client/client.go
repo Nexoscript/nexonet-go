@@ -6,8 +6,10 @@ import (
 	"io"
 	"net"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/Nexoscript/nexonet-go/api"
@@ -42,10 +44,16 @@ func Connect(host string, port int64) {
 		fmt.Println("Error while connecting:", err.Error())
 		os.Exit(1)
 	}
-	defer conn.Close()
 	fmt.Println("Connected to server ", host+":"+strconv.FormatInt(port, 10))
 	serverReader := bufio.NewReader(conn)
 	go run(serverReader)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	<-sigChan
+
+	fmt.Println("Client disconnecting...")
+	conn.Close()
 }
 
 func run(reader *bufio.Reader) {
