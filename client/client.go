@@ -118,3 +118,23 @@ func SendPacket(conn net.Conn, p api.PacketInterface) {
 		fmt.Printf("Error while writing packet %s to server: %s\n", p.GetType(), err.Error())
 	}
 }
+
+func IsRunning() bool {
+	return isRunning
+}
+
+func IsAuth() bool {
+	return isAuth
+}
+
+func GetPacketManager() *packet.PacketManager {
+	return packetManager
+}
+
+func GetConnection() net.Conn {
+	return conn
+}
+
+func GetId() string {
+	return id
+}
