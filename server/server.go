@@ -12,9 +12,10 @@ import (
 	packetimpl "github.com/Nexoscript/nexonet-go/packet/packet_impl"
 )
 
+var listen net.Listener
 var packetManager *packet.PacketManager
 
-func Initilize() {
+func initilize() {
 	packetManager = packet.NewPacketManager()
 	packetManager.RegisterPacketType("DISCONNECT", func() api.PacketInterface { return &packetimpl.DisconnectPacket{} })
 	packetManager.RegisterPacketType("AUTH", func() api.PacketInterface { return &packetimpl.AuthPacket{} })
@@ -22,12 +23,18 @@ func Initilize() {
 }
 
 func Start(host string, port int64) {
-	listen, err := net.Listen("tcp", host+":"+strconv.FormatInt(port, 10))
+	initilize()
+	var err error
+	listen, err = net.Listen("tcp", host+":"+strconv.FormatInt(port, 10))
 	fmt.Println("Server is listening on " + host + ":" + strconv.FormatInt(port, 10))
 	if err != nil {
 		fmt.Println("Error while listening:", err.Error())
 	}
 	defer listen.Close()
+	go run()
+}
+
+func run() {
 	for {
 		conn, err := listen.Accept()
 		if err != nil {
@@ -36,6 +43,10 @@ func Start(host string, port int64) {
 		}
 		go HandleClientRequest(conn)
 	}
+}
+
+func Close() {
+
 }
 
 func SendToClient(id string, packet api.PacketInterface) {

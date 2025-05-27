@@ -3,9 +3,11 @@ package client
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Nexoscript/nexonet-go/api"
@@ -19,17 +21,23 @@ const (
 	NUM_ITERATIONS = 3
 )
 
+var id string
+var conn net.Conn
 var packetManager *packet.PacketManager
+var isAuth bool = false
+var isRunning bool = false
 
-func Initilize() {
+func initilize() {
 	packetManager = packet.NewPacketManager()
 	packetManager.RegisterPacketType("DISCONNECT", func() api.PacketInterface { return &packetimpl.DisconnectPacket{} })
 	packetManager.RegisterPacketType("AUTH", func() api.PacketInterface { return &packetimpl.AuthPacket{} })
 	packetManager.RegisterPacketType("AUTH_RESPONSE", func() api.PacketInterface { return &packetimpl.AuthResponsePacket{} })
 }
 
-func Start(host string, port int64) {
-	conn, err := net.Dial("tcp", host+":"+strconv.FormatInt(port, 10))
+func Connect(host string, port int64) {
+	initilize()
+	var err error
+	conn, err = net.Dial("tcp", host+":"+strconv.FormatInt(port, 10))
 	if err != nil {
 		fmt.Println("Error while connecting:", err.Error())
 		os.Exit(1)
@@ -37,33 +45,57 @@ func Start(host string, port int64) {
 	defer conn.Close()
 	fmt.Println("Connected to server ", host+":"+strconv.FormatInt(port, 10))
 	serverReader := bufio.NewReader(conn)
-	go func() {
-		for {
-			message, err := serverReader.ReadString('\n')
+	go run(serverReader)
+}
+
+func run(reader *bufio.Reader) {
+	for {
+		if isRunning {
+			if !isAuth {
+				authPacket := packetimpl.NewAuthPacket(uuid.New().String())
+				SendPacket(conn, authPacket)
+			}
+			serverResponse, err := reader.ReadString('\n')
 			if err != nil {
-				if err.Error() == "EOF" {
-					fmt.Println("Server connection disconnected.")
+				if err == io.EOF {
+					// this.logger.log(LoggingType.INFO, "Serververbindung geschlossen.")
 					return
 				}
-				fmt.Println("Error while reading:", err.Error())
+				//this.logger.log(LoggingType.ERROR, fmt.Sprintf("Fehler beim Lesen vom Server: %v", err))
 				return
 			}
-			fmt.Print("Server: " + message)
+			serverResponse = strings.TrimSpace(serverResponse)
+			if serverResponse != "" {
+				if !strings.HasPrefix(serverResponse, "{") {
+					serverResponse = "{" + serverResponse
+				}
+				packet, err := packetManager.FromJson(serverResponse)
+				if err != nil {
+					continue
+				}
+				if isAuth {
+					//clientReceivedEvent.OnClientReceived(this, packet)
+				}
+				if authResponsePacket, ok := packet.(*packetimpl.AuthResponsePacket); ok {
+					if authResponsePacket.IsSuccess {
+						id = authResponsePacket.Id
+						isAuth = true
+						//clientConnectEvent.onClientConnect(this)
+						continue
+					}
+					authPacket := packetimpl.NewAuthPacket(uuid.New().String())
+					SendPacket(conn, authPacket)
+				}
+			}
+			time.Sleep(1 * time.Millisecond)
+			continue
 		}
-	}()
-	for i := 1; i <= NUM_ITERATIONS; i++ {
-		disconnectPacket := packetimpl.NewDisconnectPacket(1000 + i)
-		SendPacket(conn, disconnectPacket)
-		time.Sleep(1 * time.Second)
-
-		authPacket := packetimpl.NewAuthPacket(uuid.New().String())
-		SendPacket(conn, authPacket)
-		time.Sleep(1 * time.Second)
+		break
 	}
+}
 
-	fmt.Println("Alle Pakete gesendet. Warte auf ausstehende Serverantworten...")
-	time.Sleep(2 * time.Second)
-	fmt.Println("Client wird beendet.")
+func Disconncet() {
+	conn.Close()
 }
 
 func SendPacket(conn net.Conn, p api.PacketInterface) {
