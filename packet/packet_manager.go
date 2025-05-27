@@ -38,6 +38,8 @@ func (pm *PacketManager) FromJson(jsonString string) (api.PacketInterface, error
 	if err != nil {
 		return nil, fmt.Errorf("error while reading type of packet: %w", err)
 	}
+	fmt.Printf("\n%s\n", base.Type)
+	fmt.Printf("\n%s\n", jsonString)
 	creator, found := pm.packetRegistry[base.Type]
 	if !found {
 		return nil, fmt.Errorf("unknown registered packet type: %s", base.Type)

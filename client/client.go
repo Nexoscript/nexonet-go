@@ -56,6 +56,11 @@ func run(reader *bufio.Reader) {
 			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
 				continue
 			}
+			if conn == nil {
+				Disconnect()
+				fmt.Println("Client disconnected")
+				break
+			}
 			if err == io.EOF {
 				fmt.Println("Server connection closed.")
 			} else {
@@ -101,14 +106,11 @@ func run(reader *bufio.Reader) {
 
 func Disconnect() {
 	if conn != nil {
-		disconnectPacket := packetimpl.NewDisconnectPacket(0)
-		SendPacket(conn, disconnectPacket)
-		time.Sleep(100 * time.Millisecond)
 		conn.Close()
-		isRunning = false
-		isAuth = false
-		fmt.Println("Client connection closed.")
 	}
+	isRunning = false
+	isAuth = false
+	fmt.Println("Client connection closed.")
 }
 
 func SendPacket(conn net.Conn, p api.PacketInterface) {

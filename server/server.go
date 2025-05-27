@@ -16,8 +16,10 @@ import (
 
 var listen net.Listener
 var packetManager *packet.PacketManager
+var isRunning bool = false
 
 func initilize() {
+	isRunning = true
 	packetManager = packet.NewPacketManager()
 	packetManager.RegisterPacketType("DISCONNECT", func() api.PacketInterface { return &packetimpl.DisconnectPacket{} })
 	packetManager.RegisterPacketType("AUTH", func() api.PacketInterface { return &packetimpl.AuthPacket{} })
@@ -43,20 +45,28 @@ func Start(host string, port int64) {
 }
 
 func run() {
-	for {
+	for isRunning {
 		conn, err := listen.Accept()
 		if err != nil {
 			fmt.Println("Error while accepting client connection:", err.Error())
-			os.Exit(1)
+			Close()
+			break
 		}
 		go HandleClientRequest(conn)
 	}
 }
 
 func Close() {
-
+	if listen != nil {
+		listen.Close()
+	}
+	isRunning = false
 }
 
 func SendToClient(id string, packet api.PacketInterface) {
 
+}
+
+func GetPacketManager() *packet.PacketManager {
+	return packetManager
 }
