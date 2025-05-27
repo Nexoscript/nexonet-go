@@ -30,6 +30,7 @@ var isRunning bool = false
 func initilize() {
 	packetManager = packet.NewPacketManager()
 	packetManager.RegisterPacketType("DISCONNECT", func() api.PacketInterface { return &packetimpl.DisconnectPacket{} })
+	packetManager.RegisterPacketType("ACCEPT", func() api.PacketInterface { return &packetimpl.AcceptPacket{} })
 	packetManager.RegisterPacketType("AUTH", func() api.PacketInterface { return &packetimpl.AuthPacket{} })
 	packetManager.RegisterPacketType("AUTH_RESPONSE", func() api.PacketInterface { return &packetimpl.AuthResponsePacket{} })
 }
