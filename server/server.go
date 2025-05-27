@@ -67,6 +67,10 @@ func SendToClient(id string, packet api.PacketInterface) {
 
 }
 
+func SendToClients(packet api.PacketInterface) {
+
+}
+
 func GetPacketManager() *packet.PacketManager {
 	return packetManager
 }

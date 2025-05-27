@@ -2,9 +2,10 @@ package server
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"net"
+
+	packetimpl "github.com/Nexoscript/nexonet-go/packet/packet_impl"
 )
 
 func HandleClientRequest(conn net.Conn) {
@@ -27,16 +28,13 @@ func HandleClientRequest(conn net.Conn) {
 			continue
 		}
 		fmt.Printf("Received [%s] from %s: %s\n", packet.GetType(), conn.RemoteAddr().String(), packet.String())
-		responseMap := map[string]string{
-			"status":  "OK",
-			"message": fmt.Sprintf("Server has received packet '%s': %s", packet.GetType(), packet.String()),
-		}
-		responseJsonBytes, err := json.Marshal(responseMap)
+		acceptPacket := packetimpl.NewAcceptPacket(fmt.Sprintf("Received [%s] from %s: %s\n", packet.GetType(), conn.RemoteAddr().String(), packet.String()))
+		jsonString, err = packetManager.ToJson(acceptPacket)
 		if err != nil {
-			fmt.Println("Error while serializing answer:", err.Error())
-			continue
+			fmt.Printf("Error while serializing packet %s: %s\n", packet.GetType(), err.Error())
+			return
 		}
-		_, err = conn.Write(append(responseJsonBytes, '\n'))
+		_, err = conn.Write(append([]byte(jsonString), '\n'))
 		if err != nil {
 			fmt.Println("Error while writing answer:", err.Error())
 			continue
