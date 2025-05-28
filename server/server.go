@@ -18,7 +18,7 @@ var listen net.Listener
 var packetManager *packet.PacketManager
 var isRunning bool = false
 
-func initilize() {
+func initialize() {
 	isRunning = true
 	packetManager = packet.NewPacketManager()
 	packetManager.RegisterPacketType("DISCONNECT", func() api.PacketInterface { return &packetimpl.DisconnectPacket{} })
@@ -28,7 +28,7 @@ func initilize() {
 }
 
 func Start(host string, port int64) {
-	initilize()
+	initialize()
 	var err error
 	listen, err = net.Listen("tcp", host+":"+strconv.FormatInt(port, 10))
 	fmt.Println("Server is listening on " + host + ":" + strconv.FormatInt(port, 10))
@@ -42,7 +42,10 @@ func Start(host string, port int64) {
 	<-sigChan
 
 	fmt.Println("Server closing...")
-	listen.Close()
+	err = listen.Close()
+	if err != nil {
+		return
+	}
 }
 
 func run() {
@@ -59,7 +62,10 @@ func run() {
 
 func Close() {
 	if listen != nil {
-		listen.Close()
+		err := listen.Close()
+		if err != nil {
+			return
+		}
 	}
 	isRunning = false
 }

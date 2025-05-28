@@ -9,7 +9,12 @@ import (
 )
 
 func HandleClientRequest(conn net.Conn) {
-	defer conn.Close()
+	defer func(conn net.Conn) {
+		err := conn.Close()
+		if err != nil {
+
+		}
+	}(conn)
 	clientReader := bufio.NewReader(conn)
 	for {
 		jsonMessageBytes, err := clientReader.ReadBytes('\n')

@@ -2,6 +2,7 @@ package client
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -18,7 +19,7 @@ import (
 )
 
 const (
-	NUM_ITERATIONS = 3
+	NumIterations = 3
 )
 
 var id string
@@ -27,7 +28,7 @@ var packetManager *packet.PacketManager
 var isAuth bool = false
 var isRunning bool = false
 
-func initilize() {
+func initialize() {
 	packetManager = packet.NewPacketManager()
 	packetManager.RegisterPacketType("DISCONNECT", func() api.PacketInterface { return &packetimpl.DisconnectPacket{} })
 	packetManager.RegisterPacketType("ACCEPT", func() api.PacketInterface { return &packetimpl.AcceptPacket{} })
@@ -36,7 +37,7 @@ func initilize() {
 }
 
 func Connect(host string, port int64) {
-	initilize()
+	initialize()
 	var err error
 	conn, err = net.Dial("tcp", host+":"+strconv.FormatInt(port, 10))
 	if err != nil {
@@ -51,10 +52,15 @@ func Connect(host string, port int64) {
 
 func run(reader *bufio.Reader) {
 	for isRunning {
-		conn.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
-		serverResponse, err := reader.ReadString('\n')
+		err := conn.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
 		if err != nil {
-			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+			return
+		}
+		var serverResponse string
+		serverResponse, err = reader.ReadString('\n')
+		if err != nil {
+			var netErr net.Error
+			if errors.As(err, &netErr) && netErr.Timeout() {
 				continue
 			}
 			if conn == nil {
@@ -70,18 +76,21 @@ func run(reader *bufio.Reader) {
 			Disconnect()
 			return
 		}
-		conn.SetReadDeadline(time.Time{})
+		err = conn.SetReadDeadline(time.Time{})
+		if err != nil {
+			return
+		}
 		serverResponse = strings.TrimSpace(serverResponse)
 		if serverResponse != "" {
 			if !strings.HasPrefix(serverResponse, "{") {
 				serverResponse = "{" + serverResponse
 			}
-			packet, err := packetManager.FromJson(serverResponse)
+			serializedPacket, err := packetManager.FromJson(serverResponse)
 			if err != nil {
-				fmt.Printf("Error while deserializing packet: %v\n", err)
+				fmt.Printf("Error while deserializing serializedPacket: %v\n", err)
 				continue
 			}
-			switch p := packet.(type) {
+			switch p := serializedPacket.(type) {
 			case *packetimpl.AuthResponsePacket:
 				if p.IsSuccess {
 					id = p.Id
@@ -97,7 +106,7 @@ func run(reader *bufio.Reader) {
 				fmt.Printf("Server has send DISCONNECT-Packet with Code %d. Closing connection.\n", p.Code)
 				Disconnect()
 			default:
-				fmt.Printf("Received packet of type '%s': %s\n", p.GetType(), serverResponse)
+				fmt.Printf("Received serializedPacket of type '%s': %s\n", p.GetType(), serverResponse)
 			}
 		}
 	}
@@ -109,7 +118,10 @@ func Disconnect() {
 		return
 	}
 	if conn != nil {
-		conn.Close()
+		err := conn.Close()
+		if err != nil {
+			return
+		}
 	}
 	isRunning = false
 	isAuth = false
